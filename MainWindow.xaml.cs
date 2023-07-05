@@ -71,32 +71,59 @@ namespace GoCompilerC3
             languagePatterns.Add(("Go", new Regex(@"^\s*chan\s+(?:<-)?[\w]+\s*$", RegexOptions.IgnoreCase)));
             languagePatterns.Add(("Go", new Regex(@"^\s*panic\s+.*\s*$", RegexOptions.IgnoreCase)));
             languagePatterns.Add(("Go", new Regex(@"^\s*recover\s*\(\)\s*\{\s*$", RegexOptions.IgnoreCase)));
-            languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*fmt\.Println\(""Hola Mundo""\)\s*\}\s*$", RegexOptions.IgnoreCase)));
+            languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*fmt\.Println\("".*""\)\s*\}\s*$", RegexOptions.IgnoreCase)));
+            languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]*$", RegexOptions.IgnoreCase)));
+            
+
+
             // ...
         }
 
         public string Analyze(string code)
         {
-            bool validSyntax = false;
+            int errorLine = -1;
             string validLanguage = "";
 
             foreach (var pattern in languagePatterns)
             {
-                if (pattern.Item2.IsMatch(code))
+                Match match = pattern.Item2.Match(code);
+                if (match.Success)
                 {
-                    validSyntax = true;
-                    validLanguage = pattern.language;
+                    validLanguage = pattern.Item1;
                     break;
+                }
+                else if (match.Index >= 0)
+                {
+                    // La coincidencia falló y se encontró una posición incorrecta
+                    errorLine = code.Substring(0, match.Index).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).Length;
                 }
             }
 
-            if (validSyntax)
+            if (!string.IsNullOrEmpty(validLanguage))
             {
-                return $"El código tiene sintaxis válida.\nLenguaje detectado: {validLanguage}\n\nCódigo ingresado:\n{code}";
+                if (validLanguage == "Go")
+                {
+
+                    var match = Regex.Match(code, @"fmt\.Println\(""([^""]*)""\)");
+                    if (match.Success)
+                    {
+                        return $"Compilación exitosa.\nLenguaje detectado: {validLanguage}\n\nSalida: {match.Groups[1].Value}";
+
+                    }
+                }
+
+                return $"Compilación exitosa.\nLenguaje detectado: {validLanguage}\n\nCódigo ingresado:\n{code}";
             }
             else
             {
-                return $"El código no tiene sintaxis válida.\n\nCódigo ingresado:\n{code}";
+                if (errorLine > 0)
+                {
+                    return $"Error de compilación.\n\nCódigo ingresado:\n{code}";
+                }
+                else
+                {
+                    return $"Error de compilación.\nError en la línea: {errorLine}\n\nCódigo ingresado:\n{code}";
+                }
             }
         }
     }

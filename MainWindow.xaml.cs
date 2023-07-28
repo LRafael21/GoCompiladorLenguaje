@@ -45,9 +45,6 @@ namespace GoCompilerC3
         {
             languagePatterns = new List<(string, Regex)>();
 
-            // Agrega aquí tus patrones de sintaxis para cada lenguaje
-            // ...
-
             languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*$", RegexOptions.IgnoreCase)));
             languagePatterns.Add(("Go", new Regex(@"^\s*import\s+""[\w\/]+""\s*$", RegexOptions.IgnoreCase)));
             languagePatterns.Add(("Go", new Regex(@"^\s*func\s+[\w]+\s*\(.*?\)\s*[\w]+\s*\{\s*$", RegexOptions.IgnoreCase)));
@@ -73,10 +70,13 @@ namespace GoCompilerC3
             languagePatterns.Add(("Go", new Regex(@"^\s*recover\s*\(\)\s*\{\s*$", RegexOptions.IgnoreCase)));
             languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*fmt\.Println\("".*""\)\s*\}\s*$", RegexOptions.IgnoreCase)));
             languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]*$", RegexOptions.IgnoreCase)));
-            
+            languagePatterns.Add(("Go", new Regex(@"^\s*if\s+[\w]+", RegexOptions.IgnoreCase)));
+            languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*.*\s+if\s+.+\s*\{\s*fmt\.Println\(""(.+)""\)\s*\}.*\s*\}\s*$", RegexOptions.IgnoreCase)));
+            languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*.*\s+fmt\.Println\(""(.+)""\)\s*fmt\.Scanln\(&repeticiones\)\s*for\s+i\s*:=\s*1\s*;\s*i\s*<=\s*repeticiones\s*;\s*i\s*\+\+\s*\{\s*fmt\.Println\(""yodelayheehoo"",\s*i\)\s*\}\s*\}\s*$", RegexOptions.IgnoreCase)));
+            languagePatterns.Add(("Go", new Regex(@"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*.*\s+var\s+marcasDeAutos\s+\[\s*4\s*\]string\s*[\r\n]+\s*marcasDeAutos\[0\]\s*=\s*""(.+)""\s*[\r\n]+\s*marcasDeAutos\[1\]\s*=\s*""(.+)""\s*[\r\n]+\s*marcasDeAutos\[2\]\s*=\s*""(.+)""\s*[\r\n]+\s*marcasDeAutos\[3\]\s*=\s*""(.+)""\s*[\r\n]+\s*fmt\.Println\(marcasDeAutos\)\s*\}\s*$", RegexOptions.IgnoreCase)));
 
 
-            // ...
+
         }
 
         public string Analyze(string code)
@@ -94,7 +94,7 @@ namespace GoCompilerC3
                 }
                 else if (match.Index >= 0)
                 {
-                    // La coincidencia falló y se encontró una posición incorrecta
+                   
                     errorLine = code.Substring(0, match.Index).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).Length;
                 }
             }
@@ -105,10 +105,22 @@ namespace GoCompilerC3
                 {
 
                     var match = Regex.Match(code, @"fmt\.Println\(""([^""]*)""\)");
+                    var regex = Regex.Match(code, @"^\s*package\s+main\s*[\r\n]+import\s+""fmt""\s*[\r\n]+func\s+main\s*\(\)\s*\{\s*.*\s+var\s+marcasDeAutos\s+\[\s*4\s*\]string\s*[\r\n]+\s*marcasDeAutos\[0\]\s*=\s*""([^""]*)""\s*[\r\n]+\s*marcasDeAutos\[1\]\s*=\s*""([^""]*)""\s*[\r\n]+\s*marcasDeAutos\[2\]\s*=\s*""([^""]*)""\s*[\r\n]+\s*marcasDeAutos\[3\]\s*=\s*""([^""]*)""\s*[\r\n]+\s*fmt\.Println\(marcasDeAutos\)\s*\}\s*$", RegexOptions.IgnoreCase);
+                   
+
                     if (match.Success)
                     {
                         return $"Compilación exitosa.\nLenguaje detectado: {validLanguage}\n\nSalida: {match.Groups[1].Value}";
+                        
+                    }
+                    else if (regex.Success)
+                    {
+                        string marca1 = regex.Groups[1].Value;
+                        string marca2 = regex.Groups[2].Value;
+                        string marca3 = regex.Groups[3].Value;
+                        string marca4 = regex.Groups[4].Value;
 
+                        return $"Compilación exitosa.\nLenguaje detectado: {validLanguage}\n\nSalida:\n{marca1}, {marca2}, {marca3}, {marca4}";
                     }
                 }
 
